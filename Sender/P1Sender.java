@@ -1,3 +1,4 @@
+package Sender;
 
 public class P1Sender {
     public static void main(String args[]) {
