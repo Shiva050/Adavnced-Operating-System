@@ -56,14 +56,14 @@ public class Sender {
         try {
             out_to_server = new DataOutputStream(sender_socket.getOutputStream());
             out_to_server.writeUTF(data);
+            serverAck(); //input received acknowledgement
         }
         catch(IOException e) {
             System.out.println("Data Send Failed - Sender. "+ e.getMessage());
         }
-        System.out.println("Data Sent Successfully!");
     }
 
-    public void receieve_data() {
+    public void serverAck() {
         try {
             in_from_server = new DataInputStream(sender_socket.getInputStream());
             dataAck = in_from_server.readUTF();
@@ -71,14 +71,14 @@ public class Sender {
         catch (Exception e) {
             System.out.println("Data Receive Failed - Sender. "+ e.getMessage());
         }
-        System.out.println("Relay ACK: " + dataAck);
+        System.out.println(dataAck);
     }
 
     public void takeInput(String placeholder) {
         try {
             // take the input from the user
             BufferedReader in_from_user = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter your " + placeholder + " : ");
+            System.out.print("Enter your " + placeholder + " : ");
             this.currentInput = in_from_user.readLine();
         } 
         catch (IOException e) {

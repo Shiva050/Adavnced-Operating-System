@@ -6,7 +6,10 @@ public class P1Sender {
         s1.createSocket();
         s1.takeInput("User-name");
         s1.sendData(s1.getCurrentInput());
-        s1.receieve_data();
+        s1.serverAck(); // Acknowledgement for Username verification
+        s1.takeInput("Password");
+        s1.sendData(s1.getCurrentInput());
+        s1.serverAck(); // Acknowledgement for Password verification
         s1.closeSocket();
     }
 }
