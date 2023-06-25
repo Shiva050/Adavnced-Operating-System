@@ -1,5 +1,3 @@
-package Sender;
-
 public class P1Sender {
     public static void main(String args[]) {
         System.out.println("In Sender Main: ");

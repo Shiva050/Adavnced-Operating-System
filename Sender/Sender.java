@@ -1,4 +1,3 @@
-package Sender;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.io.DataOutputStream;
