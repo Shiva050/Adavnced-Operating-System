@@ -3,5 +3,6 @@ public class P1Server {
         System.out.println("In Server Main");
         Server ser = new Server(Integer.parseInt(args[0]));
         ser.createServerSocket();
+        // ser.connectReciever("Sapphire.uhcl.edu");
     }
 }

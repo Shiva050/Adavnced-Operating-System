@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 
 public class Sender {
     
@@ -56,6 +57,32 @@ public class Sender {
         try {
             out_to_server = new DataOutputStream(sender_socket.getOutputStream());
             out_to_server.writeUTF(data);
+            serverAck(); //input received acknowledgement
+        }
+        catch(IOException e) {
+            System.out.println("Data Send Failed - Sender. "+ e.getMessage());
+        }
+    }
+
+    public void sendSerializedData(String message, int total_length) {
+        try {
+            
+            //serialization
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            out_to_server = new DataOutputStream(byteStream);
+            out_to_server.writeInt(total_length);
+
+            // Write the message
+            out_to_server.writeUTF(message);
+
+            // Flush and close the stream
+            out_to_server.flush();
+            out_to_server.close();
+
+            // Retrieve the serialized data as a byte array
+            byte[] serializedData = byteStream.toByteArray();
+            out_to_server = new DataOutputStream(sender_socket.getOutputStream());
+            out_to_server.write(serializedData);
             serverAck(); //input received acknowledgement
         }
         catch(IOException e) {
