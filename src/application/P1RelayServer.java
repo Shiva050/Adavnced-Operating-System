@@ -11,7 +11,6 @@ public class P1RelayServer {
         Thread relayServerThread = new Thread(
             () -> {
                 relayServer.startRelayCommunication(relayPort);
-                relayServer.startRelayReceiverCommunication("localhost", 12223);
                 relayServer.receiveData();
             }
         );

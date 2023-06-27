@@ -1,6 +1,6 @@
 ReceiverName IPAddress PortNumber
-Sapphire1.uhcl.edu 129.15.00.01 ServerPort+1
-Sapphire2.uhcl.edu 129.15.00.02 ServerPort+1
-Sapphire3.uhcl.edu 129.15.00.03 ServerPort+1
-Sapphire4.uhcl.edu 129.15.00.04 ServerPort+1
-Sapphire5.uhcl.edu 129.15.00.05 ServerPort+1
+Sapphire1.uhcl.edu localhost 12223
+Sapphire2.uhcl.edu localhost 12223
+Sapphire3.uhcl.edu localhost 12223
+Sapphire4.uhcl.edu localhost 12223
+Sapphire5.uhcl.edu localhost 12223

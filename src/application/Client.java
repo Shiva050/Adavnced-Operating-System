@@ -27,14 +27,7 @@ public class Client {
             }
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-        } 
-        // finally {
-        //     try {
-        //         networkOperations.close();
-        //     } catch (IOException e) {
-        //         e.printStackTrace();
-        //     }
-        // }
+        }
     }
 
     public void takeInput(String placeholder) throws ClassNotFoundException  {
@@ -60,6 +53,7 @@ public class Client {
                     DataObject responseData = (DataObject) responseObject;
                     response = responseData.getData();
                     responseType = responseData.getType();
+                    System.out.println(responseType);
                     if (response.equals("Valid Username.") | 
                         response.equals("Authenticated.") | 
                         response.equals("Receiver Found.") |
@@ -67,6 +61,10 @@ public class Client {
                         response.equals("Closed the Receiver")) {
                         // Input processing successful, move to the next iteration
                         //break;
+                        
+                        if (responseType.equals("search result") ) {
+                            System.out.println("Longest Common Substring: "+ response);
+                        }
                         if(response.equals("Closed the Receiver")) {
                             System.out.println("Closing Client");
                             networkOperations.close(clientSocket);

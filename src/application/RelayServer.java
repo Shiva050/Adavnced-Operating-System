@@ -67,34 +67,34 @@ public class RelayServer {
                 Object dataObject = networkOperations.receiveObject(clientSocket);
                 if (dataObject instanceof DataObject) {
                     DataObject data = (DataObject) dataObject;
-                    System.out.println(data);
                     String message = data.getData();
                     String type = data.getType();
 
-                    if ("close".equalsIgnoreCase(message))
-                        break;
-
                     System.out.println("Received data from client: " + message);
                     
-                    if(type.equals("close")) {
-                        //
+                    if(type.equalsIgnoreCase("close") & message.equalsIgnoreCase("yes")) {
+                        networkOperations.close(clientSocket);
                     } else {
                         processData(message, type);
                     }
 
-                    if (type.equals("actualData") | type.equals("close")) {
+                    if (type.equalsIgnoreCase("actualData") | (type.equalsIgnoreCase("close") & message.equalsIgnoreCase("yes"))) {
                         
                         //Send data to receiver server
                         networkOperations.sendObject(new DataObject(message, type), relaySocket);
 
                         //Receive acknowledgement from receiver server
                         Object ackObject = networkOperations.receiveObject(relaySocket);
-                        if (ackObject instanceof DataObject) {
-                            DataObject ackData = (DataObject) ackObject;
-                            System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
-
-                            // Send acknowledgement back to client
-                            networkOperations.sendObject(new DataObject(ackData.getData(), ackData.getType()), clientSocket);
+                        try {
+                            if (ackObject instanceof DataObject) {
+                                DataObject ackData = (DataObject) ackObject;
+                                System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
+    
+                                // Send acknowledgement back to client
+                                networkOperations.sendObject(new DataObject(ackData.getData(), ackData.getType()), clientSocket);
+                            }
+                        } catch(Exception e) {
+                            System.out.println("Communicated Terminated...\nDistributed System Closed");
                         }
                     }
                 }
@@ -105,12 +105,12 @@ public class RelayServer {
     }
 
     public void processData(String data, String type) {
-        if (type.equals("username")) {
+        if (type.equalsIgnoreCase("username")) {
             readUsersFile();
             verifyUser(data);
-        } else if (type.equals("password")) {
+        } else if (type.equalsIgnoreCase("password")) {
             validateUser(data);
-        } else if (type.equals("receiverServer")) {
+        } else if (type.equalsIgnoreCase("receiverServer")) {
             readReceiverFile();
             verifyReceiver(data);
         }
@@ -158,7 +158,7 @@ public class RelayServer {
 
     public void validateUser(String data) {
         try {
-            if(data.equals(userPasswords.get(this.loggedInUser))){
+            if(data.equalsIgnoreCase(userPasswords.get(this.loggedInUser))){
                 networkOperations.sendObject(new DataObject("Authenticated.", "Password"), clientSocket);
             } else {
                 System.out.println("Not Authenticated");
@@ -199,6 +199,7 @@ public class RelayServer {
         if(receiverIPMapping.containsKey(address)){
             try {
                 networkOperations.sendObject(new DataObject("Receiver Found.", "receiver"), clientSocket);
+                startRelayReceiverCommunication(address, Integer.parseInt(receiverIPMapping.get(address)));
             } catch(IOException e) {
                 e.printStackTrace();
             }
