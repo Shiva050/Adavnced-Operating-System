@@ -41,7 +41,8 @@ public class Receiver {
                     DataObject data = (DataObject) dataObject;
                     String message = data.getData();
                     String type = data.getType();
-                    if (("close".equalsIgnoreCase(type)) & ("yes".equalsIgnoreCase(message))){
+                    System.out.println(message + type);
+                    if (("close".equalsIgnoreCase(type)) & ("close".equalsIgnoreCase(message))){
                         System.out.println("Received Close Message");
                         networkOperations.sendObject(new DataObject("Closed the Receiver", "receiver"), relaySocket);
                         networkOperations.close(relaySocket);

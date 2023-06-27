@@ -74,34 +74,30 @@ public class RelayServer {
 
                     System.out.println("Received data from client: " + message);
                     
-                    if(type.equalsIgnoreCase("close") & message.equalsIgnoreCase("yes")) {
-                        networkOperations.close(clientSocket);
-                    } else {
+                    if(!type.equalsIgnoreCase("close")) {
                         processData(message, type);
-                    }
+                    } 
 
-                    if (type.equalsIgnoreCase("actualData") | (type.equalsIgnoreCase("close") & message.equalsIgnoreCase("yes"))) {
+                    if (type.equalsIgnoreCase("actualData") | (type.equalsIgnoreCase("close") & message.equalsIgnoreCase("Close"))) {
                         
                         //Send data to receiver server
                         networkOperations.sendObject(new DataObject(message, type), relaySocket);
 
                         //Receive acknowledgement from receiver server
                         Object ackObject = networkOperations.receiveObject(relaySocket);
-                        try {
-                            if (ackObject instanceof DataObject) {
-                                DataObject ackData = (DataObject) ackObject;
-                                System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
-    
-                                // Send acknowledgement back to client
-                                networkOperations.sendObject(new DataObject(ackData.getData(), ackData.getType()), clientSocket);
-                            }
-                        } catch(Exception e) {
-                            System.out.println("Communicated Terminated...\nDistributed System Closed");
+                        if (ackObject instanceof DataObject) {
+                            DataObject ackData = (DataObject) ackObject;
+                            System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
+
+                            // Send acknowledgement back to client
+                            networkOperations.sendObject(new DataObject(ackData.getData(), ackData.getType()), clientSocket);
                         }
                     }
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Communication Terminated...Distributed Network closed");
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

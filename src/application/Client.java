@@ -37,7 +37,7 @@ public class Client {
             String message;
             while (true) {
                 if(placeholder.equals("close")) {
-                    System.out.print("Do you want to close the application? (yes/no): ");
+                    System.out.print("Closing the application. Please type Close: ");
                 } else {
                     System.out.print("Enter your " + placeholder + " : ");
                 }
@@ -53,7 +53,6 @@ public class Client {
                     DataObject responseData = (DataObject) responseObject;
                     response = responseData.getData();
                     responseType = responseData.getType();
-                    System.out.println(responseType);
                     if (response.equals("Valid Username.") | 
                         response.equals("Authenticated.") | 
                         response.equals("Receiver Found.") |

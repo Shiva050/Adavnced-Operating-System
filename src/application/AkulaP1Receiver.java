@@ -1,7 +1,7 @@
 package src.application;
 import src.utils.NetworkOperations;
 
-public class P1Receiver {
+public class AkulaP1Receiver {
     public static void main(String[] args) {
         NetworkOperations networkOperations = new NetworkOperations();
         Receiver receiver = new Receiver(networkOperations);

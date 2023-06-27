@@ -1,7 +1,7 @@
 package src.application;
 import src.utils.NetworkOperations;
 
-public class P1RelayServer {
+public class AkulaP1RelayServer {
     public static void main(String[] args) {
         NetworkOperations networkOperations = new NetworkOperations();
         RelayServer relayServer = new RelayServer(networkOperations);
