@@ -31,12 +31,12 @@ public class NetworkOperations {
         return objectInputStream.readObject();
     }
 
-    public void close() throws IOException {
+    public void close(Socket closingSocket) throws IOException {
         if (input != null)
             input.close();
         if (output != null)
             output.close();
-        if (socket != null)
-            socket.close();
+        if (closingSocket != null)
+            closingSocket.close();
     }
 }

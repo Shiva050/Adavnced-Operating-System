@@ -5,15 +5,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class RelayServer {
     private NetworkOperations networkOperations;
-    private ServerSocket serverSocket = null;
-    private Socket clientSocket = null;
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
+    private Socket relaySocket;
     private String loggedInUser;
     private Map<String, String> userPasswords = new HashMap<>(); 
     private Map<String, String> receiverIPMapping = new HashMap<>(); 
@@ -21,11 +20,10 @@ public class RelayServer {
     public RelayServer(NetworkOperations networkOperations) {
         this.networkOperations = networkOperations;
         this.loggedInUser = null;
+        this.serverSocket = null;
+        this.clientSocket = null;
+        this.relaySocket = null;
     }
-
-    // public RelayServer(Socket clientSocket) {
-    //     this.networkOperations = new NetworkOperations(clientSocket);
-    // }
 
     public void startRelayCommunication(int port) {
 
@@ -36,9 +34,6 @@ public class RelayServer {
             clientSocket = serverSocket.accept();
             System.out.println("Client connected: " + clientSocket);
 
-            // networkOperations.connect(receiverAddress, receiverPort);
-            // System.out.println("Connected to receiver server.");
-
             // Send acknowledgement to client
             networkOperations.sendObject(new DataObject("Connection established with the relay server.", "Connection ACK"), clientSocket);
 
@@ -46,6 +41,23 @@ public class RelayServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void startRelayReceiverCommunication(String receiverAddress, int receiverPort) {
+        try {
+            relaySocket = networkOperations.connect(receiverAddress, receiverPort);
+            System.out.println("Connected to receiver server.");
+
+            // Receive acknowledgement from relay server
+            Object ackObject = networkOperations.receiveObject(relaySocket);
+
+            if (ackObject instanceof DataObject) {
+                DataObject ackData = (DataObject) ackObject;
+                System.out.println("Received acknowledgement: " + ackData.getData());
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } 
     }
 
     public void receiveData() {
@@ -63,25 +75,28 @@ public class RelayServer {
                         break;
 
                     System.out.println("Received data from client: " + message);
-                    processData(message, type);
-                    //networkOperations.sendObject(new DataObject("Data sent successfully."), clientSocket);
-
                     
+                    if(type.equals("close")) {
+                        //
+                    } else {
+                        processData(message, type);
+                    }
 
+                    if (type.equals("actualData") | type.equals("close")) {
+                        
+                        //Send data to receiver server
+                        networkOperations.sendObject(new DataObject(message, type), relaySocket);
 
+                        //Receive acknowledgement from receiver server
+                        Object ackObject = networkOperations.receiveObject(relaySocket);
+                        if (ackObject instanceof DataObject) {
+                            DataObject ackData = (DataObject) ackObject;
+                            System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
 
-                    // Send data to receiver server
-                    // networkOperations.sendObject(new DataObject(message));
-
-                    // Receive acknowledgement from receiver server
-                    // Object ackObject = networkOperations.receiveObject();
-                    // if (ackObject instanceof DataObject) {
-                    //     DataObject ackData = (DataObject) ackObject;
-                    //     System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
-
-                    //     // Send acknowledgement back to client
-                    //     networkOperations.sendObject(new DataObject(ackData.getData()));
-                    // }
+                            // Send acknowledgement back to client
+                            networkOperations.sendObject(new DataObject(ackData.getData(), ackData.getType()), clientSocket);
+                        }
+                    }
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -182,11 +197,19 @@ public class RelayServer {
 
     public void verifyReceiver(String address) {
         if(receiverIPMapping.containsKey(address)){
-            System.out.println("Receiver Found");
-            System.out.println(receiverIPMapping.get(address));
+            try {
+                networkOperations.sendObject(new DataObject("Receiver Found.", "receiver"), clientSocket);
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
             
         } else {
-            System.out.println("Reciever Not found! " + address + " , act:" + receiverIPMapping.get(address));
+            try {
+                networkOperations.sendObject(new DataObject("Reciever Not found!" + address + " , act:" + receiverIPMapping.get(address), "Password"), clientSocket);
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
+            
         }
     }
 }

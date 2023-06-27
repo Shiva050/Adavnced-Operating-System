@@ -18,9 +18,6 @@ public class Client {
             clientSocket = networkOperations.connect(relayAddress, relayPort);
             System.out.println("Connected to relay server.");
 
-            // Send acknowledgement request to relay server
-            // networkOperations.sendObject(new DataObject("ACK"));
-
             // Receive acknowledgement from relay server
             Object ackObject = networkOperations.receiveObject(clientSocket);
 
@@ -46,9 +43,14 @@ public class Client {
             BufferedReader consoleInput = new BufferedReader(new InputStreamReader(System.in));
             String message;
             while (true) {
-                System.out.print("Enter your " + placeholder + " : ");
+                if(placeholder.equals("close")) {
+                    System.out.print("Do you want to close the application? (yes/no): ");
+                } else {
+                    System.out.print("Enter your " + placeholder + " : ");
+                }
                 message = consoleInput.readLine();
                 String response = null;
+                String responseType = null;
                 // Send input to relay server
                 networkOperations.sendObject(new DataObject(message, placeholder), clientSocket);
 
@@ -57,18 +59,27 @@ public class Client {
                 if (responseObject instanceof DataObject) {
                     DataObject responseData = (DataObject) responseObject;
                     response = responseData.getData();
-                    if (response.equals("Valid Username.") | response.equals("Authenticated.")) {
+                    responseType = responseData.getType();
+                    if (response.equals("Valid Username.") | 
+                        response.equals("Authenticated.") | 
+                        response.equals("Receiver Found.") |
+                        responseType.equals("search result") |
+                        response.equals("Closed the Receiver")) {
                         // Input processing successful, move to the next iteration
-                        break;
+                        //break;
+                        if(response.equals("Closed the Receiver")) {
+                            System.out.println("Closing Client");
+                            networkOperations.close(clientSocket);
+                            break;
+                        } else {
+                            break;
+                        }
                     } else {
                         System.out.println("Input processing failed. Please try again.");
                     }
                     System.out.println("Received acknowledgement: " + responseData.getData());
 
                 }
-
-                if ("close".equalsIgnoreCase(message))
-                    break;
             }
         } 
         catch (IOException e) {
