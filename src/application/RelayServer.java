@@ -1,84 +1,110 @@
 package src.application;
-import src.utils.NetworkUtils;
+import src.utils.NetworkOperations;
 import java.io.BufferedReader;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Map;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RelayServer {
-    private ServerSocket relayServerSocket;
-    private Socket relayClientSocket;
-    private ObjectInputStream relayClientReader;
-    private ObjectOutputStream relayClientWriter;
-
-    private Socket receiverSocket;
-    private ObjectInputStream receiverReader;
-    private ObjectOutputStream receiverWriter;
-
-    private Map<String, String> userPasswords;
+    private NetworkOperations networkOperations;
+    private ServerSocket serverSocket = null;
+    private Socket clientSocket = null;
     private String loggedInUser;
+    private Map<String, String> userPasswords = new HashMap<>(); 
+    private Map<String, String> receiverIPMapping = new HashMap<>(); 
 
-    public RelayServer(int relayPort, int receiverPort) {
+    public RelayServer(NetworkOperations networkOperations) {
+        this.networkOperations = networkOperations;
+        this.loggedInUser = null;
+    }
+
+    // public RelayServer(Socket clientSocket) {
+    //     this.networkOperations = new NetworkOperations(clientSocket);
+    // }
+
+    public void startRelayCommunication(int port) {
+
         try {
-            relayServerSocket = NetworkUtils.createServerSocket(relayPort);
-            relayClientSocket = NetworkUtils.acceptClientSocket(relayServerSocket);
-            relayClientReader = NetworkUtils.createReader(relayClientSocket);
-            relayClientWriter = NetworkUtils.createWriter(relayClientSocket);
+            serverSocket = new ServerSocket(port);
+            System.out.println("Relay server started. Waiting for clients...");
 
-            receiverSocket = NetworkUtils.createClientSocket("localhost", receiverPort);
-            receiverReader = NetworkUtils.createReader(receiverSocket);
-            receiverWriter = NetworkUtils.createWriter(receiverSocket);
+            clientSocket = serverSocket.accept();
+            System.out.println("Client connected: " + clientSocket);
 
-            this.loggedInUser = null;
+            // networkOperations.connect(receiverAddress, receiverPort);
+            // System.out.println("Connected to receiver server.");
 
-            data data = new data("Relay acknowledgement", "Acknowledgement", "Relay acknowledgement".length());
-            NetworkUtils.sendData(relayClientWriter, data);
-        } catch (Exception e) {
+            // Send acknowledgement to client
+            networkOperations.sendObject(new DataObject("Connection established with the relay server.", "Connection ACK"), clientSocket);
+
+            System.out.println("Send");
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void startCommunication() {
+    public void receiveData() {
         try {
             while (true) {
-                data dataFromClient = NetworkUtils.receiveData(relayClientReader);
+                // Receive data from client
+                Object dataObject = networkOperations.receiveObject(clientSocket);
+                if (dataObject instanceof DataObject) {
+                    DataObject data = (DataObject) dataObject;
+                    System.out.println(data);
+                    String message = data.getData();
+                    String type = data.getType();
 
-                System.out.println("Data received from client: " + dataFromClient.data);
+                    if ("close".equalsIgnoreCase(message))
+                        break;
 
-                if (dataFromClient.type == "username") {
-                    //Executing readUserFile method to read the users list to verify user
-                    readUsersFile();
-                    //verify user
-                    verifyUser(dataFromClient.data);
-                } else {
-                    validateUser(dataFromClient.data);
-                }
-                
-                // Send to Receiver
-                NetworkUtils.sendData(receiverWriter, dataFromClient);
-                data receiverAck = NetworkUtils.receiveData(receiverReader);
-                System.out.println("Receiver acknowledgement received: " + receiverAck);
-                NetworkUtils.sendData(relayClientWriter, receiverAck);
-                if (dataFromClient.data.equalsIgnoreCase("con close")) {
-                    break;
+                    System.out.println("Received data from client: " + message);
+                    processData(message, type);
+                    //networkOperations.sendObject(new DataObject("Data sent successfully."), clientSocket);
+
+                    
+
+
+
+                    // Send data to receiver server
+                    // networkOperations.sendObject(new DataObject(message));
+
+                    // Receive acknowledgement from receiver server
+                    // Object ackObject = networkOperations.receiveObject();
+                    // if (ackObject instanceof DataObject) {
+                    //     DataObject ackData = (DataObject) ackObject;
+                    //     System.out.println("Received acknowledgement from receiver server: " + ackData.getData());
+
+                    //     // Send acknowledgement back to client
+                    //     networkOperations.sendObject(new DataObject(ackData.getData()));
+                    // }
                 }
             }
-            NetworkUtils.closeSocket(receiverSocket);
-            NetworkUtils.closeSocket(relayClientSocket);
-            NetworkUtils.closeServerSocket(relayServerSocket);
-        } catch (Exception e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
-    
+
+    public void processData(String data, String type) {
+        if (type.equals("username")) {
+            readUsersFile();
+            verifyUser(data);
+        } else if (type.equals("password")) {
+            validateUser(data);
+        } else if (type.equals("receiverServer")) {
+            readReceiverFile();
+            verifyReceiver(data);
+        }
+    }
+
     public void readUsersFile() {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("src/static/userList.txt"));
+            reader = new BufferedReader(new FileReader("../src/static/userList.txt"));
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] columns = line.split(" ");
@@ -102,26 +128,65 @@ public class RelayServer {
     }
 
     public void verifyUser(String userName) {
-        if(userPasswords.containsKey(userName)) {
-            this.loggedInUser = userName;
-            data userAck = new data("Valid User", "username", "Valid User".length());
-            NetworkUtils.sendData(relayClientWriter, userAck);
-            this.loggedInUser = userName;
-        } else {
-            data userAck = new data("InValid User", "username", "Valid User".length());
-            NetworkUtils.sendData(relayClientWriter, userAck);
+        try {
+            if(userPasswords.containsKey(userName)) {
+                System.out.println("Valid");
+                this.loggedInUser = userName;
+                networkOperations.sendObject(new DataObject("Valid Username.", "Username"), clientSocket);
+            } else {
+                networkOperations.sendObject(new DataObject("InValid Username.", "Username"), clientSocket);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public void validateUser(String password) {
-        if(password.equals(userPasswords.get(this.loggedInUser))){
-            data authAck = new data("User authentication Successfull", "password", "User authentication Successfull".length());
-            NetworkUtils.sendData(relayClientWriter, authAck);
-        } else {
-            data authAck = new data("User authentication Failed", "password", "User authentication Failed".length());
-            NetworkUtils.sendData(relayClientWriter, authAck);
-        }
-        
+    public void validateUser(String data) {
+        try {
+            if(data.equals(userPasswords.get(this.loggedInUser))){
+                networkOperations.sendObject(new DataObject("Authenticated.", "Password"), clientSocket);
+            } else {
+                System.out.println("Not Authenticated");
+                networkOperations.sendObject(new DataObject("Not Authenticated.", "Password"), clientSocket);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }   
     }
 
+    public void readReceiverFile() {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader("../src/static/receiverList.txt"));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] columns = line.split(" ");
+                if (columns.length == 3) {
+                    receiverIPMapping.put(columns[0], columns[1]);
+                } else {
+                    System.out.println("Invaild line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.print("Relay File Reader: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch(IOException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+        }
+    }
+
+    public void verifyReceiver(String address) {
+        if(receiverIPMapping.containsKey(address)){
+            System.out.println("Receiver Found");
+            System.out.println(receiverIPMapping.get(address));
+            
+        } else {
+            System.out.println("Reciever Not found! " + address + " , act:" + receiverIPMapping.get(address));
+        }
+    }
 }
