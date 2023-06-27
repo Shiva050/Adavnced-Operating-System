@@ -5,7 +5,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RelayServer {
@@ -15,8 +17,8 @@ public class RelayServer {
     private Socket relaySocket;
     private String loggedInUser;
     private Map<String, String> userPasswords = new HashMap<>(); 
-    private Map<String, String> receiverIPMapping = new HashMap<>(); 
-
+    private Map<String, List<String>> receiverIPMapping = new HashMap<>(); 
+    
     public RelayServer(NetworkOperations networkOperations) {
         this.networkOperations = networkOperations;
         this.loggedInUser = null;
@@ -177,7 +179,10 @@ public class RelayServer {
             while ((line = reader.readLine()) != null) {
                 String[] columns = line.split(" ");
                 if (columns.length == 3) {
-                    receiverIPMapping.put(columns[0], columns[1]);
+                    List<String> addressAndPort = new ArrayList<>();
+                    addressAndPort.add(columns[1]);
+                    addressAndPort.add(columns[2]);
+                    receiverIPMapping.put(columns[0], addressAndPort);
                 } else {
                     System.out.println("Invaild line: " + line);
                 }
@@ -196,17 +201,18 @@ public class RelayServer {
     }
 
     public void verifyReceiver(String address) {
+        List<String> addressAndPort = receiverIPMapping.get(address);
         if(receiverIPMapping.containsKey(address)){
             try {
                 networkOperations.sendObject(new DataObject("Receiver Found.", "receiver"), clientSocket);
-                startRelayReceiverCommunication(address, Integer.parseInt(receiverIPMapping.get(address)));
+                startRelayReceiverCommunication(addressAndPort.get(0), Integer.parseInt(addressAndPort.get(1)));
             } catch(IOException e) {
                 e.printStackTrace();
             }
             
         } else {
             try {
-                networkOperations.sendObject(new DataObject("Reciever Not found!" + address + " , act:" + receiverIPMapping.get(address), "Password"), clientSocket);
+                networkOperations.sendObject(new DataObject("Reciever Not found!" + address + " , act:" + addressAndPort.get(0), "Password"), clientSocket);
             } catch(IOException e) {
                 e.printStackTrace();
             }
