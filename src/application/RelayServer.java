@@ -157,6 +157,7 @@ public class RelayServer {
     public void validateUser(String data) {
         try {
             if(data.equalsIgnoreCase(userPasswords.get(this.loggedInUser))){
+                System.out.println("Authenticated");
                 networkOperations.sendObject(new DataObject("Authenticated.", "Password"), clientSocket);
             } else {
                 System.out.println("Not Authenticated");
